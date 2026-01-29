@@ -1,0 +1,172 @@
+Set Up of Today:
+- Setting up the notebook by linking the chapters into VS Code by unzipping the downloaded file
+
+Chapter 1 Learning:
+- Programming is a way of thinking meaning you have to learn to think in a new way
+- Combining mathematics, engineering and natural science
+- arithmetic operators (+, -, *, /)
+- 2 types of numbers in python:
+  - Integers: numbers with no fractional or decimal part
+  - floating-point numbers: integers and numbers with a decimal point
+- (+, -, *) = integer
+- dividing 2 integers = floating point number
+- integer division or floor division = (//)
+- exponentiation / power = (**)
+- ^ is a bitwise operator called XOR
+- Collection of operators and numbers = expression
+  - example: 6+6**2
+  - follows order of operations
+  - value is the result of the expression
+- Arithmetic Functions:
+  - round function takes a floating point number and roundsit off to the nearest integer for example: round(42.4)
+  - 'abs' = absolute value
+  - We can call this "function call"
+  - syntax error = there is something wrong with the structure of the expression
+  - a function call requires parentheses
+- Strings:
+  - Sequences of letters: 'Hello', "World"
+  - Double quote or single quote works
+  - '+' operator works with strings; it joins two strings into a single string = concatenation
+  - '*' operator also works with strings, it makes multiple copies of a string and concatenates them (repeats it however many times)
+  - Function called "len" that computes the length of a string
+  - len counts the letters between the quotes, but not the quotes
+- Values and types:
+  - A kind of value is called a type
+  - function called type that tells you the type of any value
+  - The types int, float, and str can be used as functions. For example, int can take a floating-point number and convert it to an integer (always rounding down) same with float
+  - Putting a sequence of digits in quotes is a string and using it like a number will get you an error
+  - You must convert strings to numbers before doing math:
+    - int('126') / 3 → 42.0
+    - float('12.6') → 12.6
+  - Using commas in numbers creates a tuple, not a number:
+    - 1,000,000 → (1, 0, 0)
+  - Use underscores for readable large numbers:
+    - 1_000_000 → 1000000
+- Formal vs Natural Languages
+  - Natural languages (English, Spanish, etc.):
+    - Evolved naturally
+    - Ambiguous
+    - Redundant and expressive
+  - Formal languages (math notation, programming languages):
+    - Designed for specific purposes
+    - Unambiguous
+    - Concise and literal
+  - Key differences:
+    - Ambiguity: natural = ambiguous, formal = precise
+    - Redundancy: natural = verbose, formal = efficient
+    - Literalness: formal languages mean exactly what they say
+  - Formal languages:
+    - Are denser and slower to read
+    - Require strict structure
+    - Are sensitive to small errors (syntax matters)
+- Debugging
+  - Bugs are programming errors.
+  - Debugging is finding and fixing bugs.
+  - Debugging can be emotionally frustrating (normal and expected).
+  - Helpful mindset:
+    - Think of the computer as fast and precise but not intuitive.
+    - Your role is to manage it clearly and logically.
+  - Debugging is a transferable skill beyond programming.
+
+Chapter 2 Learning:
+- Variables
+  - Name that refers to a value
+    - created using an assignment statement
+      - n = 17
+    - asignment statement parts:
+      - variable name (left)
+      - = operator
+      - expression (right)
+    - Variables can store:
+      - integers (n = 17)
+      - floats (pi = 3.14)
+      - strings (message = "Hello")
+    - Assignment statements produce no output
+    - variables can be used:
+      - in expressions: n+25
+      - with operators 2*pi
+      - in function calls: round(pi), len(message)
+  - State diagrams
+    - visual way to represent variables
+    - variable name points to its value
+    - shows the state of a program at a moment in time
+    - used to model how python stores value
+- Variable names
+    - can contain letters and numbers
+    - cannot start with a number
+    - underscore _ is allowed
+    - convention: use lowercase
+    - illegal names cause syntax errors
+    - keywords cannot be used as variable names
+    - examples of illegal names:
+      - million! (punctuation)
+      - 76trombones (starts with number)
+      - class (keyword)
+    - keywords have special meanings in python
+    - editors usually highlight keywords automatically
+- the import statement
+  - used to access features not built into core python
+  - a module is a file containing variables and functions
+  - example;
+    - import math
+  - access module contents using the dot operator:
+    - math.pi
+    - math.sqrt(25)
+  - common math functions:
+    - math.sqrt() = square root
+    - math.pow(x, y) = exponentiation
+  - exponentiation operator ** is preerred over math.pow
+- Expressions vs statements:
+  - expression:
+    - produces a value
+    - can include variables, operators, and function calls
+  - statement:
+    - performs an action
+    - has no value
+  - examples:
+    - expression: 19+n+round(math.pi)
+    - statement: n=17, import math
+  - evaluation = computing an expression's value
+  - execution = running a statement
+- the print() function:
+  - expressions display only the last evaluated value
+  - print() displays values explicitly
+  - can print:
+    - numbers
+    - strings
+    - expressions
+  - can print multiple values seperated by commas:
+    - prnt('Pi is', math.pi)
+  - print() automatically adds spaces between arguments
+- Arguments:
+  - arguments are values passed into a function
+  - functions can take
+    - one argument: int('101)
+    - two arguments: math.pow (5, 2)
+    - optional arguments: round(math.pi, 3)
+    - any number of arguments: print()
+  - Common argument related errors (TypeError):
+    - too many arguments
+    - too few arguments
+    - wrong argument type
+  - type checking helps catch bugs early
+- comments:
+  - comments explain code in natural language
+  - start with #
+  - ignored by python when running code
+  - used to explain
+    - why something is done
+    - non obvious logic
+  - good comments add information not obvious from code
+  - bad comments restate the code itself
+  - clear variable names reduce the need for commments
+- Debugging:
+  - three types of errors:
+    - syntax: code structure is invalid
+    - runtime errors (exceptions): errors during execution
+    - semantic errors: program runs but gives wrong result
+    - Examples:
+      - illegal variable name = syntax error
+      - dividing string by number = runtime error
+      - wrong math due to order of operations = semantic error
+    - semantic errors are hardest to find

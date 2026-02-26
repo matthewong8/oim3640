@@ -134,9 +134,9 @@ def print_session_summary(total_exercises, total_volume, body_parts,
 
 def log_one_exercise(target_body_part=None):
     """
-    Logs one exercise and returns its volume, details, and whether to keep it.
-    If target_body_part is provided it will be shown in the summary.
-    Returns: (volume, exercise, sets, reps, keep_it) where keep_it is True if user confirms.
+    Logs one exercise and returns its volume.
+    Also prints a summary for that exercise.  If a target_body_part is
+    provided it will be shown in the summary.
     """
     print()
     exercise = input("Exercise name: ")
@@ -162,58 +162,9 @@ def log_one_exercise(target_body_part=None):
     if weight == 0:
         print("Note: 0 weight entered (bodyweight exercise).")
 
-    # Ask user to confirm before adding to session
-    keep_it = get_yes_no("Keep this exercise? (y/n): ")
-    return volume, exercise, sets, reps, (keep_it == "y")
-
-
-def log_exercise_session():
-    """
-    Handles logging multiple exercises in a row with retry and undo capability.
-    Returns: list of (volume, exercise, sets, reps, body_part) tuples to add to session.
-    """
-    exercises_to_add = []
-    
-    while True:
-        target_body_part = input("Target body part: ")
-        vol, exercise_name, sets, reps, keep_it = log_one_exercise(target_body_part)
-        
-        if keep_it:
-            # User confirmed this exercise
-            exercises_to_add.append((vol, exercise_name, sets, reps, target_body_part))
-            print()
-            print("Exercise logged!")
-            
-            # Ask what to do next
-            while True:
-                action = input("Log another exercise? (y/n/u for undo): ").lower()
-                if action == "y":
-                    break
-                elif action == "n":
-                    return exercises_to_add
-                elif action == "u":
-                    if exercises_to_add:
-                        undone = exercises_to_add.pop()
-                        print(f"Undid exercise: {undone[1]}")
-                        print()
-                        # Ask if they want to continue logging
-                        continue_logging = get_yes_no("Log another exercise? (y/n): ")
-                        if continue_logging == "n":
-                            return exercises_to_add
-                        else:
-                            break
-                    else:
-                        print("No exercises to undo.")
-                else:
-                    print("Please enter y (yes), n (no), or u (undo).")
-        else:
-            # User rejected the exercise
-            print("Exercise discarded.")
-            retry = get_yes_no("Try logging another exercise? (y/n): ")
-            if retry == "n":
-                break
-    
-    return exercises_to_add
+    # Milestone 3: return more info WITHOUT removing your original behavior.
+    # We still return volume, but now we also return exercise name, sets, reps.
+    return volume, exercise, sets, reps
 
 
 def print_menu():
@@ -222,7 +173,6 @@ def print_menu():
     print("1 - Log an exercise")
     print("2 - View session summary")
     print("h - Help")
-    print("u - Undo last exercise")
     print("3 - Quit (or q)")
 
 
@@ -235,7 +185,6 @@ def main():
     total_volume = 0.0
     total_exercises = 0
     body_parts = []  # track body parts entered for each exercise
-    logged_exercises = []  # track all logged exercises for undo capability
 
     # Milestone 3: additional session tracking
     total_sets = 0
@@ -248,26 +197,27 @@ def main():
     try:
         while True:
             print_menu()
-            choice = input("Choose an option (1/2/h/u/3 or q): ").lower()
+            choice = input("Choose an option (1/2/h/3 or q): ")
 
             if choice == "1":
-                exercises_to_add = log_exercise_session()
-                
-                # Add all logged exercises to the session totals
-                for vol, name, sets, reps, body_part in exercises_to_add:
-                    body_parts.append(body_part)
-                    logged_exercises.append((vol, name, sets, reps, body_part))
-                    
-                    total_volume = total_volume + vol
-                    total_exercises = total_exercises + 1
-                    total_sets = total_sets + sets
-                    total_reps = total_reps + (sets * reps)
-                    
-                    # Update best exercise (highest volume)
-                    if total_exercises == 1 or vol > best_exercise_volume:
-                        best_exercise_volume = vol
-                        best_exercise_name = name
-                        best_exercise_body_part = body_part
+                target_body_part = input("Target body part: ")
+                body_parts.append(target_body_part)
+
+                # Updated to accept expanded return values
+                vol, name, sets, reps = log_one_exercise(target_body_part)
+
+                total_volume = total_volume + vol
+                total_exercises = total_exercises + 1
+
+                # Update new totals
+                total_sets = total_sets + sets
+                total_reps = total_reps + (sets * reps)
+
+                # Update best exercise (highest volume)
+                if total_exercises == 1 or vol > best_exercise_volume:
+                    best_exercise_volume = vol
+                    best_exercise_name = name
+                    best_exercise_body_part = target_body_part
 
             elif choice == "2":
                 print_session_summary(total_exercises, total_volume, body_parts,
@@ -275,51 +225,16 @@ def main():
                                       best_exercise_name, best_exercise_volume,
                                       best_exercise_body_part)
 
-            elif choice == "h":
+            elif choice == "h" or choice == "H":
                 print_help()
-            
-            elif choice == "u":
-                if logged_exercises:
-                    undone = logged_exercises.pop()
-                    vol, name, sets, reps, body_part = undone
-                    
-                    # Remove from totals
-                    total_volume = total_volume - vol
-                    total_exercises = total_exercises - 1
-                    total_sets = total_sets - sets
-                    total_reps = total_reps - (sets * reps)
-                    body_parts.remove(body_part)
-                    
-                    # Recalculate best exercise
-                    if logged_exercises:
-                        best_exercise_volume = 0.0
-                        best_exercise_name = ""
-                        best_exercise_body_part = ""
-                        for vol_check, name_check, _, _, body_part_check in logged_exercises:
-                            if vol_check > best_exercise_volume:
-                                best_exercise_volume = vol_check
-                                best_exercise_name = name_check
-                                best_exercise_body_part = body_part_check
-                    else:
-                        best_exercise_volume = 0.0
-                        best_exercise_name = ""
-                        best_exercise_body_part = ""
-                    
-                    print()
-                    print(f"Undid exercise: {name}")
-                    print()
-                else:
-                    print()
-                    print("No exercises to undo.")
-                    print()
 
-            elif choice == "3" or choice == "q":
+            elif choice == "3" or choice == "q" or choice == "Q":
                 print()
                 print("See you tomorrow! Nice work today.")
                 break
 
             else:
-                print("Please choose 1, 2, h, u, 3, or q.")
+                print("Please choose 1, 2, h, 3, or q.")
 
     except KeyboardInterrupt:
         print()

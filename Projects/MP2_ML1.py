@@ -1,9 +1,14 @@
 def read_file(filename):
     """Read and return the contents of a file."""
-    fin = open(filename)
-    text = fin.read()
-    fin.close()
-    return text
+    try:
+        fin = open(filename)
+        text = fin.read()
+        fin.close()
+        return text
+    except FileNotFoundError:
+        print(f"Error: File '{filename}' not found.")
+        print("Check the exact filename, including spaces and punctuation.")
+        return None
 
 
 def clean_text(text):
@@ -64,6 +69,9 @@ def main():
     filename = input("Enter the name of your text file: ")
 
     text = read_file(filename)
+    if text is None:
+        return
+    
     cleaned_text = clean_text(text)
     words = cleaned_text.split()
 

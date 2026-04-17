@@ -1,0 +1,354 @@
+/* MBTA Stop Finder - Stylesheet */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary-color: #003da5;
+    --secondary-color: #0096d6;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --gray-light: #f8f9fa;
+    --gray-dark: #333;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--gray-dark);
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+header {
+    text-align: center;
+    color: white;
+    margin-bottom: 40px;
+    padding: 30px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--border-radius);
+    backdrop-filter: blur(10px);
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+header p {
+    font-size: 1.1em;
+    opacity: 0.95;
+}
+
+main {
+    margin-bottom: 40px;
+}
+
+/* Cards and Sections */
+.card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+}
+
+.results-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 30px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+}
+
+.result-item {
+    margin-bottom: 20px;
+}
+
+.result-item h2 {
+    font-size: 1.2em;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.result-value {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: var(--gray-dark);
+    padding: 15px;
+    background: var(--gray-light);
+    border-radius: 6px;
+    border-left: 4px solid var(--primary-color);
+}
+
+.stop-name {
+    color: var(--primary-color);
+    font-size: 1.8em;
+}
+
+.wheelchair {
+    font-size: 1.6em;
+    font-weight: 700;
+}
+
+.wheelchair.accessible {
+    color: var(--success-color);
+}
+
+.wheelchair.not-accessible {
+    color: var(--danger-color);
+}
+
+.wheelchair.unknown {
+    color: #6c757d;
+}
+
+.divider {
+    height: 1px;
+    background: #e0e0e0;
+    margin: 20px 0;
+}
+
+/* Form */
+.search-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--gray-dark);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 61, 165, 0.1);
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #002a7d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 61, 165, 0.3);
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #0078b3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 150, 214, 0.3);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Alerts and Info */
+.alert {
+    padding: 15px 20px;
+    border-radius: var(--border-radius);
+    margin-bottom: 20px;
+    border-left: 4px solid;
+}
+
+.alert-error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left-color: var(--danger-color);
+}
+
+.info-section,
+.examples,
+.info-box {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+}
+
+.info-section h3,
+.examples h3,
+.info-box h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+.info-section ol,
+.examples ul,
+.info-box ul {
+    margin-left: 20px;
+    line-height: 1.8;
+}
+
+.info-section li,
+.examples li,
+.info-box li {
+    margin-bottom: 8px;
+    color: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2em;
+    }
+
+    .card,
+    .results-card,
+    .info-section,
+    .examples,
+    .info-box {
+        padding: 20px;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+
+    .result-value {
+        font-size: 1.3em;
+    }
+
+    .stop-name {
+        font-size: 1.5em;
+    }
+
+    .wheelchair {
+        font-size: 1.3em;
+    }
+}
+
+/* Animation */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.card,
+.results-card,
+.alert {
+    animation: slideIn 0.3s ease;
+}
+
+/* Mapbox Map */
+.map-container {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--box-shadow);
+    margin-bottom: 20px;
+    animation: slideIn 0.3s ease;
+}
+
+.map-container h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.3em;
+}
+
+#map {
+    width: 100%;
+    height: 400px;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+.mapboxgl-popup-content {
+    padding: 12px 15px;
+    font-weight: 500;
+    border-radius: 6px;
+}
+
+.mapboxgl-popup-content h4 {
+    margin: 0 0 5px 0;
+    color: var(--primary-color);
+    font-size: 1.1em;
+}
+
+.mapboxgl-popup-content p {
+    margin: 5px 0 0 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+@media (max-width: 768px) {
+    #map {
+        height: 300px;
+    }
+    
+    .map-container {
+        padding: 15px;
+    }
+}

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - MBTA Stop Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Mapbox GL JS -->
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css' rel='stylesheet' />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚇 MBTA Stop Finder</h1>
+            <p>Results for your search</p>
+        </header>
+
+        <main>
+            <div class="results-card">
+                <div class="result-item">
+                    <h2>📍 Location Searched</h2>
+                    <p class="result-value">{{ place_name }}</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="result-item">
+                    <h2>🚇 Nearest MBTA Stop</h2>
+                    <p class="result-value stop-name">{{ stop_name }}</p>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="result-item">
+                    <h2>♿ Wheelchair Accessible</h2>
+                    <p class="result-value wheelchair {{ wheelchair_class }}">
+                        {{ wheelchair_status }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mapbox Map -->
+            <div class="map-container">
+                <h3>📍 Location Map</h3>
+                <div id="map"></div>
+            </div>
+
+            <div class="action-buttons">
+                <a href="/" class="btn btn-primary">Search Again</a>
+                <a href="/" class="btn btn-secondary">Back to Home</a>
+            </div>
+
+            <div class="info-box">
+                <h3>ℹ️ Information</h3>
+                <p><strong>Wheelchair Accessible:</strong></p>
+                <ul>
+                    <li><strong style="color: #28a745;">✓ Yes</strong> - The stop has wheelchair accessible features</li>
+                    <li><strong style="color: #dc3545;">✗ No</strong> - The stop may not be fully wheelchair accessible</li>
+                    <li><strong style="color: #6c757d;">? Unknown</strong> - Accessibility information not available</li>
+                </ul>
+                <p><small>For the most accurate and up-to-date accessibility information, visit the official <a href="https://www.mbta.com/" target="_blank">MBTA website</a>.</small></p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Mapbox
+        mapboxgl.accessToken = '{{ mapbox_token }}';
+        
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v12',
+            center: [{{ location_lon }}, {{ location_lat }}],
+            zoom: 14
+        });
+
+        // Add markers
+        // Location marker (blue)
+        new mapboxgl.Marker({ color: '#003da5' })
+            .setLngLat([{{ location_lon }}, {{ location_lat }}])
+            .setPopup(new mapboxgl.Popup().setHTML('<h4>📍 {{ place_name }}</h4>'))
+            .addTo(map);
+
+        // Stop marker (red)
+        new mapboxgl.Marker({ color: '#dc3545' })
+            .setLngLat([{{ stop_lon }}, {{ stop_lat }}])
+            .setPopup(new mapboxgl.Popup().setHTML('<h4>🚇 {{ stop_name }}</h4><p>Wheelchair: {{ wheelchair_status }}</p>'))
+            .addTo(map);
+
+        // Draw a line between them
+        map.on('load', function() {
+            map.addSource('route', {
+                'type': 'geojson',
+                'data': {
+                    'type': 'Feature',
+                    'geometry': {
+                        'type': 'LineString',
+                        'coordinates': [
+                            [{{ location_lon }}, {{ location_lat }}],
+                            [{{ stop_lon }}, {{ stop_lat }}]
+                        ]
+                    }
+                }
+            });
+
+            map.addLayer({
+                'id': 'route',
+                'type': 'line',
+                'source': 'route',
+                'layout': {
+                    'line-join': 'round',
+                    'line-cap': 'round'
+                },
+                'paint': {
+                    'line-color': '#888',
+                    'line-width': 3,
+                    'line-dasharray': [4, 4],
+                    'line-opacity': 0.6
+                }
+            });
+
+            // Fit map to show both markers
+            const bounds = new mapboxgl.LngLatBounds(
+                [{{ location_lon }}, {{ location_lat }}],
+                [{{ stop_lon }}, {{ stop_lat }}]
+            );
+            map.fitBounds(bounds, { padding: 50 });
+        });
+    </script>
+</body>
+</html>

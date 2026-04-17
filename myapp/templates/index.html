@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MBTA Stop Finder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚇 MBTA Stop Finder</h1>
+            <p>Find the nearest MBTA stop to any location in Boston</p>
+        </header>
+
+        <main>
+            {% if error %}
+            <div class="alert alert-error">
+                <strong>Error:</strong> {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <form method="POST" action="/results" class="search-form">
+                    <div class="form-group">
+                        <label for="place_name">Enter a location in Boston:</label>
+                        <input 
+                            type="text" 
+                            id="place_name" 
+                            name="place_name" 
+                            placeholder="e.g., Boston Common, Fenway Park, Harvard Square"
+                            required
+                            autofocus
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary">Find Nearest Stop</button>
+                </form>
+            </div>
+
+            <div class="info-section">
+                <h3>How it works:</h3>
+                <ol>
+                    <li>Enter any place name in Boston (e.g., a landmark, address, park, or business)</li>
+                    <li>The app finds the nearest MBTA subway or light rail stop</li>
+                    <li>Get information about wheelchair accessibility</li>
+                </ol>
+            </div>
+
+            <div class="examples">
+                <h3>Try these examples:</h3>
+                <ul>
+                    <li>Boston Common</li>
+                    <li>Fenway Park</li>
+                    <li>Harvard Square</li>
+                    <li>Logan Airport</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

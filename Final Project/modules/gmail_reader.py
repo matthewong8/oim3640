@@ -32,17 +32,51 @@ def authenticate_gmail():
     # Refresh or create new credentials
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
+            print("Refreshing existing Gmail token...")
             creds.refresh(Request())
         else:
             # First-time setup: need credentials.json from Google Cloud Console
+            print("=" * 60)
+            print("GMAIL AUTHORIZATION REQUIRED")
+            print("=" * 60)
+            
             flow = InstalledAppFlow.from_client_secrets_file(
                 "credentials.json", SCOPES
             )
-            creds = flow.run_local_server(port=0)
+            
+            try:
+                # Try to run local server with browser
+                print("\nOpening browser for authorization...")
+                creds = flow.run_local_server(port=0, open_browser=True)
+            except Exception as e:
+                # If that fails, provide manual URL
+                print(f"\nBrowser didn't open automatically.")
+                print("Please manually authorize:")
+                print("\n" + "=" * 60)
+                
+                # Generate the authorization URL
+                auth_flow = InstalledAppFlow.from_client_secrets_file(
+                    "credentials.json", SCOPES
+                )
+                auth_uri, _ = auth_flow.authorization_url()
+                
+                print("COPY AND PASTE THIS URL INTO YOUR BROWSER:")
+                print(auth_uri)
+                print("\n" + "=" * 60)
+                print("\nAfter authorization, a code will appear.")
+                print("Enter it below when prompted.\n")
+                
+                # Get authorization from user
+                try:
+                    creds = auth_flow.run_local_server(port=0, open_browser=False)
+                except Exception as e2:
+                    print(f"Authorization failed: {e2}")
+                    raise
         
         # Save token for next run
         with open("token.pickle", "wb") as token:
             pickle.dump(creds, token)
+        print("✓ Gmail token saved for future use\n")
     
     return build("gmail", "v1", credentials=creds)
 

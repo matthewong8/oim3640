@@ -36,8 +36,8 @@ def classify_email(subject, from_addr, snippet):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             max_tokens=10,
-            system=CLASSIFICATION_SYSTEM_PROMPT,
             messages=[
+                {"role": "system", "content": CLASSIFICATION_SYSTEM_PROMPT},
                 {
                     "role": "user",
                     "content": f"""Classify this email:
@@ -78,8 +78,8 @@ def generate_reply_draft(subject, from_addr, snippet):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             max_tokens=250,
-            system="You are drafting a professional, concise email reply. Be friendly and to the point. Keep it brief (2-3 sentences max).",
             messages=[
+                {"role": "system", "content": "You are drafting a professional, concise email reply. Be friendly and to the point. Keep it brief (2-3 sentences max)."},
                 {
                     "role": "user",
                     "content": f"""Draft a reply to this email:

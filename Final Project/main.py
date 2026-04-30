@@ -1,113 +1,251 @@
 """
-Daily Assistant Agent - Main Entry Point
-Orchestrates the full briefing pipeline
+Daily Assistant Agent — Main Entry Point
+
+Pipeline (matches proposal MVP):
+  1. Fetch weather from OpenWeatherMap
+  2. Fetch top general news headlines from RSS feeds
+  3. Fetch business / finance / M&A news from RSS feeds
+  4. Authenticate with Gmail via OAuth2
+  5. Read unread emails, classify each one with AI, and draft replies
+     for any email classified as NEEDS_REPLY
+  6. Render a beautiful HTML briefing and send it to the user's inbox
 """
 
-from modules.weather import get_weather_briefing
-from modules.news import get_news_briefing
+import datetime
+
+from modules.weather import get_weather_data
+from modules.news import get_general_news, get_business_news
 from modules.gmail_reader import authenticate_gmail, get_unread_emails
 from modules.claude_classifier import classify_email, generate_reply_draft
 from modules.email_sender import send_briefing_email, create_draft_reply
+from modules.briefing_html import render_briefing_html
 from config import USER_NAME, GMAIL_MAX_EMAILS
-import datetime
 
 
-def run_daily_briefing():
-    """
-    Main function: Orchestrates the full daily briefing pipeline.
-    1. Fetch weather and news
-    2. Read unread emails
-    3. Classify emails with Claude
-    4. Generate drafts for emails that need replies
-    5. Compile and send briefing
-    """
-    print("\n" + "="*50)
-    print("🤖 DAILY ASSISTANT AGENT")
-    print(f"⏰ {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print("="*50 + "\n")
-    
-    # Step 1: Fetch Weather and News
-    print("[1/5] Fetching weather...")
-    weather = get_weather_briefing()
-    print("✓ Weather fetched\n")
-    
-    print("[2/5] Fetching news headlines...")
-    news = get_news_briefing()
-    print("✓ News fetched\n")
-    
-    # Step 2: Authenticate Gmail and fetch emails
-    print("[3/5] Authenticating with Gmail...")
-    try:
-        service = authenticate_gmail()
-        print("✓ Gmail authenticated\n")
-    except Exception as e:
-        print(f"✗ Gmail authentication failed: {str(e)}")
-        return
-    
-    # Step 3: Get unread emails and classify them
-    print(f"[4/5] Fetching and classifying emails (max {GMAIL_MAX_EMAILS})...")
-    emails = get_unread_emails(service, max_results=GMAIL_MAX_EMAILS)
-    
-    if not emails:
-        print("✓ No unread emails\n")
-        email_summary = "No new emails."
+# ---------------------------------------------------------------------------
+# Console-side fetchers — each returns structured data for the renderer,
+# while also printing a concise summary so the user can watch progress.
+# A failure in one section never kills the whole run.
+# ---------------------------------------------------------------------------
+
+def fetch_weather():
+    """Return weather dict (or None) and print a one-line console summary."""
+    weather = get_weather_data()
+    if weather:
+        print(f"  {weather['city']}: {weather['temp']}°C, {weather['description']}")
     else:
-        print(f"✓ Found {len(emails)} unread emails\n")
-        
-        # Classify each email and generate drafts if needed
-        email_summary = f"UNREAD EMAILS ({len(emails)})\n" + "="*40 + "\n"
-        
-        for email in emails:
-            classification = classify_email(
+        print("  Weather unavailable.")
+    return weather
+
+
+def fetch_general_news():
+    articles = get_general_news()
+    print(f"  {len(articles)} general headline(s) fetched.")
+    for i, a in enumerate(articles, 1):
+        print(f"    {i}. {a['title'][:80]}  [{a['source']}]")
+    return articles
+
+
+def fetch_business_news():
+    articles = get_business_news()
+    print(f"  {len(articles)} business headline(s) fetched.")
+    for i, a in enumerate(articles, 1):
+        print(f"    {i}. {a['title'][:80]}  [{a['source']}]")
+    return articles
+
+
+def process_emails(service):
+    """
+    Read unread emails, classify each one, and draft replies for NEEDS_REPLY.
+
+    Returns:
+        list[dict]: One dict per email with keys
+            classification, subject, from, draft_saved, draft_text.
+    """
+    emails = get_unread_emails(service, max_results=GMAIL_MAX_EMAILS)
+
+    if not emails:
+        print("  Inbox is clear — no unread emails.")
+        return []
+
+    print(f"  {len(emails)} unread email(s) found. Classifying...")
+
+    results = []
+    valid_categories = {"URGENT", "NEEDS_REPLY", "FYI", "CAN_IGNORE"}
+
+    for email in emails:
+        classification = classify_email(
+            email["subject"],
+            email["from"],
+            email["snippet"],
+        )
+        if classification not in valid_categories:
+            classification = "FYI"
+
+        item = {
+            "classification": classification,
+            "subject": email["subject"],
+            "from": email["from"],
+            "draft_saved": False,
+            "draft_text": None,
+        }
+
+        print(f"    [{classification:<11}] {email['subject'][:65]}")
+
+        if classification == "NEEDS_REPLY":
+            draft = generate_reply_draft(
                 email["subject"],
                 email["from"],
-                email["snippet"]
+                email["snippet"],
             )
-            
-            email_summary += f"\n[{classification}] {email['subject']}\n"
-            email_summary += f"From: {email['from']}\n"
-            
-            # Generate draft reply if needed
-            if classification == "NEEDS_REPLY":
-                draft = generate_reply_draft(
-                    email["subject"],
-                    email["from"],
-                    email["snippet"]
-                )
-                print(f"  → Generating draft reply for: {email['subject']}")
-                create_draft_reply(service, email["id"], draft)
-        
-        email_summary += "\n✓ Drafts created for emails needing replies"
-    
-    # Step 4: Compile complete briefing
-    print("\n[5/5] Compiling briefing and sending...")
-    
-    briefing = f"""
-GOOD MORNING, {USER_NAME.upper()}!
+            saved = create_draft_reply(service, email["id"], draft)
+            item["draft_saved"] = bool(saved)
+            item["draft_text"] = draft
 
-Your personalized briefing for {datetime.date.today().strftime('%B %d, %Y')}
+        results.append(item)
 
-{weather}
+    return results
 
-{news}
 
-{email_summary}
+# ---------------------------------------------------------------------------
+# Plain-text fallback for email clients that won't render HTML
+# ---------------------------------------------------------------------------
 
----
-Sent by Daily Assistant Agent
-"""
-    
-    # Send briefing
-    success = send_briefing_email(service, briefing)
-    
-    if success:
-        print("\n" + "="*50)
-        print("✓ BRIEFING COMPLETE AND SENT")
-        print("="*50 + "\n")
+def build_plain_fallback(weather, general_news, business_news, email_items):
+    """A minimal text version for email clients that can't show HTML."""
+    today = datetime.date.today().strftime("%A, %B %d, %Y")
+    lines = [
+        f"GOOD MORNING, {USER_NAME.upper()}",
+        f"Your Daily Briefing — {today}",
+        "=" * 50,
+        "",
+        "WEATHER",
+    ]
+
+    if weather:
+        lines.append(
+            f"  {weather['city']}: {weather['temp']}°C "
+            f"({weather['description']}), feels like {weather['feels_like']}°C, "
+            f"humidity {weather['humidity']}%, wind {weather['wind_speed']} m/s"
+        )
     else:
-        print("\n" + "="*50)
-        print("✗ BRIEFING FAILED")
-        print("="*50 + "\n")
+        lines.append("  Weather unavailable.")
+
+    def add_news(label, articles):
+        lines.append("")
+        lines.append(label.upper())
+        if not articles:
+            lines.append("  No articles available.")
+            return
+        for i, a in enumerate(articles, 1):
+            lines.append(f"  {i}. {a['title']}  ({a['source']})")
+            if a["link"]:
+                lines.append(f"     {a['link']}")
+
+    add_news("Top News", general_news)
+    add_news("Business & Finance", business_news)
+
+    lines.append("")
+    lines.append("INBOX TRIAGE")
+    if not email_items:
+        lines.append("  No unread emails.")
+    else:
+        for item in email_items:
+            lines.append(f"  [{item['classification']}] {item['subject']}")
+            lines.append(f"      From: {item['from']}")
+            if item["draft_saved"]:
+                lines.append("      → Draft reply saved to Gmail Drafts.")
+
+    lines.append("")
+    lines.append("Sent by Daily Assistant Agent")
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Main orchestrator
+# ---------------------------------------------------------------------------
+
+def run_daily_briefing():
+    """Run the full daily briefing pipeline end-to-end."""
+    start_time = datetime.datetime.now()
+
+    print()
+    print("=" * 50)
+    print("  DAILY ASSISTANT AGENT")
+    print(f"  {start_time.strftime('%Y-%m-%d  %H:%M:%S')}")
+    print("=" * 50)
+    print()
+
+    # 1 — Weather
+    print("[1/6] Fetching weather...")
+    try:
+        weather = fetch_weather()
+    except Exception as e:
+        print(f"  Weather step failed: {e}")
+        weather = None
+
+    # 2 — General news
+    print("\n[2/6] Fetching top general news headlines...")
+    try:
+        general_news = fetch_general_news()
+    except Exception as e:
+        print(f"  General news step failed: {e}")
+        general_news = []
+
+    # 3 — Business news
+    print("\n[3/6] Fetching business & finance news...")
+    try:
+        business_news = fetch_business_news()
+    except Exception as e:
+        print(f"  Business news step failed: {e}")
+        business_news = []
+
+    # 4 — Gmail authentication (required to read emails AND send the briefing)
+    print("\n[4/6] Authenticating with Gmail...")
+    try:
+        service = authenticate_gmail()
+        print("  Authenticated.")
+    except Exception as e:
+        print(f"  Gmail authentication failed: {e}")
+        print("  Cannot continue without Gmail access. Exiting.")
+        return
+
+    # 5 — Email triage + draft generation
+    print(f"\n[5/6] Reading and classifying emails (cap: {GMAIL_MAX_EMAILS})...")
+    try:
+        email_items = process_emails(service)
+    except Exception as e:
+        print(f"  Email processing failed: {e}")
+        email_items = []
+
+    drafts_saved = sum(1 for item in email_items if item["draft_saved"])
+
+    # 6 — Render HTML and send the briefing
+    print("\n[6/6] Rendering HTML briefing and sending to your inbox...")
+    html_body = render_briefing_html(
+        name=USER_NAME,
+        weather=weather,
+        general_news=general_news,
+        business_news=business_news,
+        email_items=email_items,
+    )
+    plain_fallback = build_plain_fallback(
+        weather, general_news, business_news, email_items
+    )
+    success = send_briefing_email(service, html_body, plain_fallback=plain_fallback)
+
+    elapsed = (datetime.datetime.now() - start_time).seconds
+
+    print()
+    print("=" * 50)
+    if success:
+        print("  BRIEFING SENT SUCCESSFULLY")
+    else:
+        print("  FAILED TO SEND BRIEFING")
+    print(f"  Drafts saved : {drafts_saved}")
+    print(f"  Completed in : {elapsed}s")
+    print("=" * 50)
+    print()
 
 
 if __name__ == "__main__":

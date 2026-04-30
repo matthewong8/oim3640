@@ -1,55 +1,49 @@
 """
-Weather module: Fetches current conditions and forecast from OpenWeatherMap API
+Weather module: Fetches current conditions from the OpenWeatherMap API.
+
+Returns structured data so the briefing renderer (text or HTML) can
+present the information however it likes.
 """
 
 import requests
 from config import OPENWEATHER_API_KEY, CITY
 
 
-def get_weather_briefing():
+def get_weather_data():
     """
-    Fetch weather data for the configured city and return a formatted briefing.
-    
+    Fetch current weather for the configured city.
+
     Returns:
-        str: Formatted weather briefing text
+        dict | None: Dictionary with temperature, condition, humidity,
+                     wind speed, etc. Returns None if the request fails.
     """
     try:
-        # Current weather
-        url = "https://api.openweathermap.org/data/2.5/weather"
-        params = {
-            "q": CITY,
-            "appid": OPENWEATHER_API_KEY,
-            "units": "metric"
-        }
-        
-        response = requests.get(url, params=params)
+        response = requests.get(
+            "https://api.openweathermap.org/data/2.5/weather",
+            params={
+                "q": CITY,
+                "appid": OPENWEATHER_API_KEY,
+                "units": "metric",
+            },
+            timeout=10,
+        )
         response.raise_for_status()
-        
         data = response.json()
-        
-        # Extract key information
-        temp = data["main"]["temp"]
-        feels_like = data["main"]["feels_like"]
-        condition = data["weather"][0]["main"]
-        humidity = data["main"]["humidity"]
-        wind_speed = data["wind"]["speed"]
-        
-        briefing = f"""
-WEATHER BRIEFING FOR {CITY.upper()}
-Temperature: {temp}°C (feels like {feels_like}°C)
-Condition: {condition}
-Humidity: {humidity}%
-Wind Speed: {wind_speed} m/s
-"""
-        
-        return briefing.strip()
-    
-    except requests.exceptions.RequestException as e:
-        return f"Weather Fetch Failed: {str(e)}"
-    except KeyError as e:
-        return f"Weather Data Error: Missing field {str(e)}"
+
+        return {
+            "city": CITY,
+            "temp": round(data["main"]["temp"], 1),
+            "feels_like": round(data["main"]["feels_like"], 1),
+            "condition": data["weather"][0]["main"],
+            "description": data["weather"][0]["description"].capitalize(),
+            "humidity": data["main"]["humidity"],
+            "wind_speed": data["wind"]["speed"],
+            "icon_code": data["weather"][0]["icon"],
+        }
+    except Exception as e:
+        print(f"  Weather fetch failed: {e}")
+        return None
 
 
 if __name__ == "__main__":
-    # Test weather module
-    print(get_weather_briefing())
+    print(get_weather_data())

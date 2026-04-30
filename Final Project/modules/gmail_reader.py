@@ -13,6 +13,13 @@ import base64
 
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
 
+# Resolve credentials/token paths relative to the project root (one level
+# above this modules/ folder), so the script works no matter what the
+# current working directory is when it's launched.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CREDENTIALS_PATH = os.path.join(_PROJECT_ROOT, "credentials.json")
+TOKEN_PATH = os.path.join(_PROJECT_ROOT, "token.pickle")
+
 
 def authenticate_gmail():
     """
@@ -23,12 +30,12 @@ def authenticate_gmail():
         service: Gmail API service object
     """
     creds = None
-    
+
     # Load existing token if available
-    if os.path.exists("token.pickle"):
-        with open("token.pickle", "rb") as token:
+    if os.path.exists(TOKEN_PATH):
+        with open(TOKEN_PATH, "rb") as token:
             creds = pickle.load(token)
-    
+
     # Refresh or create new credentials
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -39,45 +46,26 @@ def authenticate_gmail():
             print("=" * 60)
             print("GMAIL AUTHORIZATION REQUIRED")
             print("=" * 60)
-            
-            flow = InstalledAppFlow.from_client_secrets_file(
-                "credentials.json", SCOPES
-            )
-            
-            try:
-                # Try to run local server with browser
-                print("\nOpening browser for authorization...")
-                creds = flow.run_local_server(port=0, open_browser=True)
-            except Exception as e:
-                # If that fails, provide manual URL
-                print(f"\nBrowser didn't open automatically.")
-                print("Please manually authorize:")
-                print("\n" + "=" * 60)
-                
-                # Generate the authorization URL
-                auth_flow = InstalledAppFlow.from_client_secrets_file(
-                    "credentials.json", SCOPES
+
+            if not os.path.exists(CREDENTIALS_PATH):
+                raise FileNotFoundError(
+                    f"credentials.json not found at {CREDENTIALS_PATH}. "
+                    "Download OAuth Desktop credentials from Google Cloud Console "
+                    "and save the file there."
                 )
-                auth_uri, _ = auth_flow.authorization_url()
-                
-                print("COPY AND PASTE THIS URL INTO YOUR BROWSER:")
-                print(auth_uri)
-                print("\n" + "=" * 60)
-                print("\nAfter authorization, a code will appear.")
-                print("Enter it below when prompted.\n")
-                
-                # Get authorization from user
-                try:
-                    creds = auth_flow.run_local_server(port=0, open_browser=False)
-                except Exception as e2:
-                    print(f"Authorization failed: {e2}")
-                    raise
-        
+
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CREDENTIALS_PATH, SCOPES
+            )
+
+            print("\nOpening browser for authorization...")
+            creds = flow.run_local_server(port=0, open_browser=True)
+
         # Save token for next run
-        with open("token.pickle", "wb") as token:
+        with open(TOKEN_PATH, "wb") as token:
             pickle.dump(creds, token)
         print("✓ Gmail token saved for future use\n")
-    
+
     return build("gmail", "v1", credentials=creds)
 
 

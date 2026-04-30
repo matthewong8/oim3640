@@ -2,43 +2,52 @@
 Email Sender module: Sends briefing email and creates draft replies
 """
 
-import smtplib
+import base64
+import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from config import GMAIL_USER_EMAIL, USER_EMAIL
+from config import GMAIL_USER_EMAIL
 from googleapiclient.errors import HttpError
-import base64
 
 
-def send_briefing_email(service, briefing_text):
+def send_briefing_email(service, html_body, plain_fallback=None):
     """
-    Send the compiled briefing email to the user's inbox via Gmail API.
-    
+    Send the compiled briefing email (HTML) to the user's inbox via Gmail API.
+
     Args:
         service: Gmail API service object
-        briefing_text: The compiled briefing content
-    
+        html_body (str): Full HTML document for the briefing.
+        plain_fallback (str | None): Optional plain-text version for clients
+            that can't render HTML.
+
     Returns:
-        bool: True if successful, False otherwise
+        bool: True on success, False on failure.
     """
     try:
-        message = MIMEText(briefing_text)
+        # multipart/alternative lets the client choose HTML or plain text
+        message = MIMEMultipart("alternative")
         message["to"] = GMAIL_USER_EMAIL
-        message["subject"] = "☀️ Your Daily Briefing"
-        
+        message["subject"] = (
+            f"Your Daily Briefing — "
+            f"{datetime.date.today().strftime('%a, %b %d')}"
+        )
+
+        if plain_fallback:
+            message.attach(MIMEText(plain_fallback, "plain", "utf-8"))
+        message.attach(MIMEText(html_body, "html", "utf-8"))
+
         raw_message = base64.urlsafe_b64encode(message.as_bytes()).decode()
-        send_message = {"raw": raw_message}
-        
+
         service.users().messages().send(
             userId="me",
-            body=send_message
+            body={"raw": raw_message},
         ).execute()
-        
-        print(f"✓ Briefing sent to {GMAIL_USER_EMAIL}")
+
+        print(f"  Briefing sent to {GMAIL_USER_EMAIL}")
         return True
-    
+
     except HttpError as e:
-        print(f"✗ Failed to send briefing: {str(e)}")
+        print(f"  Failed to send briefing: {e}")
         return False
 
 

@@ -2,9 +2,12 @@
 # Update these with your personal information
 
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env from the project root regardless of current working directory
+_PROJECT_ROOT = Path(__file__).resolve().parent
+load_dotenv(_PROJECT_ROOT / ".env")
 
 # User Information
 USER_NAME = "Matthew"  # Your name for personalization

@@ -16,9 +16,14 @@ import datetime
 from modules.weather import get_weather_data
 from modules.news import get_general_news, get_business_news
 from modules.gmail_reader import authenticate_gmail, get_unread_emails
-from modules.claude_classifier import classify_email, generate_reply_draft
+from modules.email_classifier import (
+    classify_email,
+    generate_reply_draft,
+    validate_api_key,
+)
 from modules.email_sender import send_briefing_email, create_draft_reply
 from modules.briefing_html import render_briefing_html
+from modules.history import save_briefing_history
 from config import USER_NAME, GMAIL_MAX_EMAILS
 
 
@@ -176,6 +181,17 @@ def run_daily_briefing():
     print("=" * 50)
     print()
 
+    # Pre-flight: validate the OpenAI key. If it's bad, the briefing still
+    # runs (weather, news, email send) but every email will be marked FYI.
+    print("[ Pre-flight ] Validating OpenAI API key...")
+    classifier_ok, classifier_msg = validate_api_key()
+    if classifier_ok:
+        print(f"  {classifier_msg}\n")
+    else:
+        print(f"  WARNING: {classifier_msg}")
+        print("  Continuing without AI classification — all emails will default to FYI ")
+        print("  and no draft replies will be generated.\n")
+
     # 1 — Weather
     print("[1/6] Fetching weather...")
     try:
@@ -236,6 +252,16 @@ def run_daily_briefing():
 
     elapsed = (datetime.datetime.now() - start_time).seconds
 
+    # Persist a snapshot of this briefing for future reference / dashboards
+    history_path = save_briefing_history(
+        weather=weather,
+        general_news=general_news,
+        business_news=business_news,
+        email_items=email_items,
+        duration_seconds=elapsed,
+        success=success,
+    )
+
     print()
     print("=" * 50)
     if success:
@@ -244,6 +270,8 @@ def run_daily_briefing():
         print("  FAILED TO SEND BRIEFING")
     print(f"  Drafts saved : {drafts_saved}")
     print(f"  Completed in : {elapsed}s")
+    if history_path:
+        print(f"  History saved: {history_path}")
     print("=" * 50)
     print()
 

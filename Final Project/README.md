@@ -1,256 +1,192 @@
 # Daily Assistant Agent
 
-An agentic AI-powered Python application that delivers a personalized daily briefing email every morning—weather, top news, and email triage—all sent to your inbox before you start your day.
+An agentic AI-powered Python application that delivers a personalized HTML briefing email every morning — weather, general world news, business & finance headlines, and a fully triaged Gmail inbox — all sent to your inbox before you start your day.
 
-## Features
+## What it does
 
-### MVP (Core Functionality)
-- ✅ **Weather briefing** — Current conditions and forecast via OpenWeatherMap API
-- ✅ **Top news headlines** — RSS feed aggregation from BBC and The Guardian
-- ✅ **Email reader** — OAuth2 authentication with Gmail API
-- ✅ **AI email classification** — Claude API classifies emails into: Urgent, Needs Reply, FYI, Can Ignore
-- ✅ **Draft reply generator** — Auto-generates context-aware email drafts
-- ✅ **Briefing delivery** — Sends compiled briefing to your inbox
-- ✅ **Secure setup** — .env for secrets, .gitignore to prevent commits
+When you run `main.py`, the agent walks through six stages end-to-end:
 
-### Stretch Goals (If Time Allows)
-- 🔄 **Google Calendar integration** — Include your day's schedule
-- 📄 **HTML email template** — Rich formatting instead of plain text
-- ⏰ **Automatic daily scheduling** — Runs at 8:00 AM automatically
-- 📚 **Briefing history** — SQLite database of past briefings
-- 🖥️ **Web dashboard** — Flask app to view last 7 days of briefings
+1. **Weather** — fetches current conditions for your configured city from OpenWeatherMap.
+2. **General news** — pulls top headlines from BBC and The Guardian world feeds via RSS.
+3. **Business & finance news** — pulls headlines from BBC Business, CNBC, The Guardian Business, and MarketWatch (covers investing, M&A, company news, and markets).
+4. **Gmail authentication** — connects to your Gmail account via OAuth2.
+5. **Inbox triage** — reads your unread emails (default cap: 20) and uses the OpenAI API (`gpt-3.5-turbo`) to classify each one into **Urgent**, **Needs Reply**, **FYI**, or **Can Ignore**. For every email tagged *Needs Reply*, it generates a short draft response and saves it directly to your Gmail Drafts folder.
+6. **Briefing email** — assembles all of the above into a clean HTML email (with a plain-text fallback) and sends it to your inbox.
 
-## Technology Stack
+A snapshot of every run is also saved as JSON in `history/YYYY-MM-DD.json` so you can build dashboards or weekly digests later.
 
-- **Python 3.x** — Core language
-- **Claude API (Anthropic)** — Email classification and reply generation
-- **Gmail API v1** — Email reading and draft creation
-- **OpenWeatherMap API** — Weather data
-- **feedparser** — RSS feed parsing (no API key needed)
-- **google-auth-oauthlib** — Gmail OAuth2 authentication
+## Tech stack
 
-## Project Structure
+- **Python 3.13**
+- **OpenAI API** — email classification and draft generation
+- **Gmail API** (`google-api-python-client`) — read inbox, save drafts, send the briefing
+- **OpenWeatherMap API** — weather
+- **feedparser** — RSS headline aggregation (no API key required)
+- **google-auth-oauthlib** — Gmail OAuth2 flow
+
+## Project structure
 
 ```
-daily-assistant-agent/
-├── main.py                          # Entry point - orchestrates the pipeline
-├── config.py                        # User settings and preferences
+Final Project/
+├── main.py                          # Entry point + pipeline orchestrator
+├── config.py                        # User settings + RSS feed lists
 ├── requirements.txt                 # Python dependencies
-├── .env                            # API keys (DO NOT COMMIT)
-├── .gitignore                      # Excludes secrets and __pycache__
-├── token.pickle                    # Gmail OAuth token (DO NOT COMMIT)
-├── credentials.json                # Gmail OAuth credentials (DO NOT COMMIT)
+├── .env                             # API keys + email (not committed)
+├── credentials.json                 # Gmail OAuth credentials (not committed)
+├── token.pickle                     # Gmail OAuth token (not committed)
+├── history/                         # Daily briefing snapshots (not committed)
 ├── modules/
 │   ├── __init__.py
-│   ├── weather.py                  # OpenWeatherMap integration
-│   ├── news.py                     # RSS feed parser
-│   ├── gmail_reader.py             # Gmail API authentication and reading
-│   ├── claude_classifier.py        # Email classification and reply generation
-│   └── email_sender.py             # Gmail draft and briefing email sending
-├── README.md                        # This file
-├── AI_USAGE.md                     # AI tool usage documentation
-└── proposal.md                     # Project proposal
+│   ├── weather.py                   # OpenWeatherMap integration
+│   ├── news.py                      # RSS feed parser (general + business)
+│   ├── gmail_reader.py              # Gmail OAuth2 + unread email fetcher
+│   ├── email_classifier.py          # OpenAI classification + draft generation
+│   ├── email_sender.py              # Sends HTML briefing + creates Gmail drafts
+│   ├── briefing_html.py             # HTML email template renderer
+│   └── history.py                   # Saves daily briefing as JSON
+├── proposal.md                      # Original project proposal
+├── AI_USAGE.md                      # Documentation of AI tool usage
+└── README.md                        # This file
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Clone the Repository
+### 1. Clone and install
 
 ```bash
-git clone https://github.com/yourusername/daily-assistant-agent.git
+git clone https://github.com/matthewong8/daily-assistant-agent.git
 cd daily-assistant-agent
-```
-
-### 2. Create and Activate Virtual Environment
-
-```bash
-# On Windows
 python -m venv venv
-venv\Scripts\activate
-
-# On macOS/Linux
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
+venv\Scripts\activate          # Windows
+# or
+source venv/bin/activate       # macOS / Linux
 pip install -r requirements.txt
 ```
 
-### 4. Get API Keys
+### 2. Get the API keys
 
-#### OpenWeatherMap API
-1. Go to [OpenWeatherMap](https://openweathermap.org/api)
-2. Sign up for a free account
-3. Generate an API key
-4. Copy the key
+**OpenWeatherMap** — sign up at https://openweathermap.org/api and copy your free API key.
 
-#### Claude API (Anthropic)
-1. Go to [Anthropic Console](https://console.anthropic.com)
-2. Sign up or log in
-3. Create an API key
-4. Copy the key
+**OpenAI** — get a key from https://platform.openai.com/account/api-keys. The free tier is no longer offered, so the account must have a paid balance or active billing.
 
-#### Gmail API
-1. Go to [Google Cloud Console](https://console.cloud.google.com)
-2. Create a new project
-3. Enable the **Gmail API**
-4. Create an **OAuth 2.0 Desktop Application** credential
-5. Download the credentials as `credentials.json`
-6. Save it in the project root directory (it will be auto-excluded by .gitignore)
+**Gmail** — go to https://console.cloud.google.com:
+1. Create a new project
+2. Enable the **Gmail API**
+3. Configure the OAuth consent screen as **External**, and add your own Gmail address as a test user
+4. Create an **OAuth 2.0 Client ID** of type **Desktop app**
+5. Download the JSON, rename it to `credentials.json`, and place it in the project root
 
-### 5. Configure Environment Variables
+### 3. Configure environment variables
 
 Create a `.env` file in the project root:
 
-```bash
-OPENWEATHER_API_KEY=your_api_key_here
-CLAUDE_API_KEY=your_api_key_here
+```
+OPENWEATHER_API_KEY=your_openweather_key
+OPENAI_API_KEY=your_openai_key
 USER_EMAIL=your-email@gmail.com
 GMAIL_USER_EMAIL=your-gmail@gmail.com
 ```
 
-**Do NOT commit `.env` to GitHub** — it's already in `.gitignore`.
+`.env` is gitignored — never commit it.
 
-### 6. Configure User Settings
+### 4. Personalize `config.py`
 
-Edit `config.py` with your preferences:
+Edit `config.py` to set:
 
 ```python
-USER_NAME = "Your Name"
-CITY = "Boston"  # For weather
-GMAIL_MAX_EMAILS = 20  # Keep costs down
+USER_NAME = "Matthew"           # Your name (used in the briefing greeting)
+CITY = "Boston"                 # Your city for weather
+GMAIL_MAX_EMAILS = 20           # Max unread emails to process per run
 MAX_NEWS_ARTICLES = 5
+MAX_BUSINESS_ARTICLES = 7
 ```
 
-## Running the Agent
+The `RSS_FEEDS` and `BUSINESS_RSS_FEEDS` lists are also configurable if you want different sources.
 
-### Manual Run (Test)
+## Running
 
 ```bash
 python main.py
 ```
 
-This will:
-1. Fetch weather and news
-2. Read your 20 most recent unread emails
-3. Classify each email using Claude
-4. Generate drafts for emails that need replies
-5. Compile and send the briefing to your inbox
+On the first run, a browser window opens asking you to authorize Gmail access. After that, a `token.pickle` file is saved and you won't need to re-authorize for ~7 days (Google's limit while the OAuth app is in "Testing" mode).
 
-### Automatic Daily Execution (Stretch Goal)
+The console prints each stage as it runs:
 
-To run automatically at 8:00 AM every day, use the schedule library (already in requirements.txt):
+```
+==================================================
+  DAILY ASSISTANT AGENT
+  2026-05-01  08:00:00
+==================================================
 
-```python
-import schedule
-import time
-from main import run_daily_briefing
+[ Pre-flight ] Validating OpenAI API key...
+  OpenAI API key is valid.
 
-schedule.every().day.at("08:00").do(run_daily_briefing)
+[1/6] Fetching weather...
+  Boston: 12.4°C, Light rain
 
-while True:
-    schedule.run_pending()
-    time.sleep(60)
+[2/6] Fetching top general news headlines...
+  5 general headline(s) fetched.
+    1. ...
+
+[3/6] Fetching business & finance news...
+  7 business headline(s) fetched.
+    1. ...
+
+[4/6] Authenticating with Gmail...
+  Authenticated.
+
+[5/6] Reading and classifying emails (cap: 20)...
+  20 unread email(s) found. Classifying...
+    [URGENT     ] Project deadline reminder
+    [NEEDS_REPLY] Re: Coffee chat next week
+    ...
+
+[6/6] Rendering HTML briefing and sending to your inbox...
+  Briefing sent to your-email@gmail.com
+
+==================================================
+  BRIEFING SENT SUCCESSFULLY
+  Drafts saved : 3
+  Completed in : 14s
+  History saved: .../history/2026-05-01.json
+==================================================
 ```
 
-Or use a cron job (macOS/Linux) or Task Scheduler (Windows).
+## Automating the daily run
 
-## Usage Example
+The proposal mentioned three approaches:
 
-```bash
-$ python main.py
+- **Windows Task Scheduler** — easiest local option. Create a task that runs `python main.py` every morning at 8:00 AM. Reliable as long as your laptop is on/awake.
+- **Python `schedule` library** — works but requires the script to run 24/7.
+- **GitHub Actions** — most reliable, runs in the cloud. Requires uploading `credentials.json` and `token.pickle` as encrypted secrets and refreshing the token weekly while the OAuth app is in Testing mode.
 
-==================================================
-🤖 DAILY ASSISTANT AGENT
-⏰ 2026-04-27 08:00:00
-==================================================
+## Stretch goals from the original proposal
 
-[1/5] Fetching weather...
-✓ Weather fetched
-
-[2/5] Fetching news headlines...
-✓ News fetched
-
-[3/5] Authenticating with Gmail...
-✓ Gmail authenticated
-
-[4/5] Fetching and classifying emails (max 20)...
-✓ Found 8 unread emails
-
-[URGENT] Deadline: Project proposal due today
-  From: boss@company.com
-
-[NEEDS_REPLY] Team meeting reschedule
-  From: colleague@company.com
-  → Generating draft reply for: Team meeting reschedule
-
-[5/5] Compiling briefing and sending...
-✓ Briefing sent to your-gmail@gmail.com
-
-==================================================
-✓ BRIEFING COMPLETE AND SENT
-==================================================
-```
+| Goal                                | Status                                                |
+|-------------------------------------|-------------------------------------------------------|
+| HTML email template                 | ✅ Implemented (`modules/briefing_html.py`)           |
+| Business / finance news section     | ✅ Implemented (`BUSINESS_RSS_FEEDS` in `config.py`)  |
+| Briefing history log                | ✅ Implemented (JSON in `history/`)                   |
+| OpenAI key validation on startup    | ✅ Implemented (`validate_api_key()` pre-flight check)|
+| Google Calendar integration         | ⏳ Not yet                                            |
+| Automatic daily scheduling          | ⏳ Not yet (manual run for now)                       |
+| Web dashboard (Flask)               | ⏳ Not yet                                            |
 
 ## Troubleshooting
 
-### Gmail API Authentication Issues
+**`ModuleNotFoundError: No module named 'dotenv'`**
+You forgot to install dependencies into the venv. Run `pip install -r requirements.txt`.
 
-**Problem**: `Error: credentials.json not found`
-- **Solution**: Download OAuth credentials from Google Cloud Console and save as `credentials.json` in project root
+**`FileNotFoundError: credentials.json`**
+Download OAuth credentials from Google Cloud Console (Desktop app type) and save as `credentials.json` in the project root.
 
-**Problem**: `Error: token.pickle is invalid`
-- **Solution**: Delete `token.pickle` and re-authenticate. You'll be prompted to grant permissions again.
+**`OpenAI rejected the API key (401 Unauthorized)`**
+Verify `OPENAI_API_KEY` in `.env` is current and the OpenAI account has billing/credits set up. The pre-flight check will surface this before any emails get processed.
 
-### API Key Issues
-
-**Problem**: `Invalid API key` or `401 Unauthorized`
-- **Solution**: 
-  - Verify your keys in `.env` are correct
-  - Restart the app after updating `.env`
-  - Check that you haven't exceeded API rate limits
-
-**Problem**: `Rate limit exceeded`
-- **Solution**: 
-  - Reduce `GMAIL_MAX_EMAILS` in `config.py`
-  - Wait a few hours before running again
-  - Consider upgrading to a paid API tier
-
-### Email Sending Issues
-
-**Problem**: `Failed to send briefing: 400 Bad Request`
-- **Solution**: 
-  - Verify `GMAIL_USER_EMAIL` in `.env` matches your Gmail account
-  - Ensure you have "Allow less secure apps" enabled (or use App Passwords for 2FA accounts)
-
-## Future Enhancements
-
-1. **Google Calendar integration** — Add your day's schedule to briefing
-2. **HTML email template** — Rich formatting with CSS styling
-3. **Persistent scheduling** — Use APScheduler for robust background task
-4. **Briefing history dashboard** — Flask web app showing past 7 days
-5. **Customizable themes** — User-defined email classification categories
-6. **Multiple news sources** — Expand beyond BBC and The Guardian
-7. **Weather alerts** — Flag severe weather conditions
-8. **Email filtering rules** — Skip certain senders or domains
-
-## Learning Outcomes
-
-- ✅ OAuth2 authentication with Gmail API
-- ✅ Building agentic workflows with AI
-- ✅ Multi-API integration (Anthropic, Google, OpenWeatherMap)
-- ✅ Email handling in Python (SMTP and REST APIs)
-- ✅ Environment configuration and secrets management
-- ✅ Error handling and API rate limiting
-- ✅ RSS feed parsing and data aggregation
+**Gmail asks me to re-authorize every week**
+That's Google's limit on OAuth apps in "Testing" mode. Either accept the weekly re-auth, or publish your app via Google's verification process.
 
 ## License
 
-MIT License — Feel free to modify and redistribute.
-
-## Questions?
-
-See `AI_USAGE.md` for documentation on how AI was used to build this project.
+MIT — feel free to fork and modify.
